@@ -22,9 +22,8 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification
 {
-    self.statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
-    self.statusItem.highlightMode = NO;
-    
+    [self initializeStatusItems];
+
     // Check if the user has logged in
     if (![self loginDetails]) {
         [self.loginWindow makeKeyAndOrderFront:self];
@@ -32,6 +31,18 @@
     }
     
     [self startFetching];
+}
+
+- (void)initializeStatusItems
+{
+    self.operationStatusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+    self.operationStatusItem.highlightMode = NO;
+    
+    self.temperatureStatusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+    self.temperatureStatusItem.highlightMode = NO;
+    
+    self.heatingStatusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+    self.heatingStatusItem.highlightMode = NO;
 }
 
 - (NSDictionary *)loginDetails
@@ -54,16 +65,16 @@
 
 - (void)startFetching
 {
-    [self fetchTemperatue];
+    [self fetchData];
     
     [NSTimer scheduledTimerWithTimeInterval:60.0f * 5.0f
                                      target:self
-                                   selector:@selector(fetchTemperatue)
+                                   selector:@selector(fetchData)
                                    userInfo:nil
                                     repeats:YES];
 }
 
-- (void)fetchTemperatue
+- (void)fetchData
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         NSDictionary *loginDetails = [self loginDetails];
@@ -89,7 +100,33 @@
         }
         
         NSString *temperature = [NSString stringWithFormat:@"%.1f°", [[json valueForKey:@"insideTemp"] floatValue]];
-        self.statusItem.title = temperature;
+        self.temperatureStatusItem.title = temperature;
+
+        NSString *operation = [json valueForKey:@"operation"];
+        NSString *autoOperation = [json valueForKey:@"autoOperation"];
+        
+        NSImage* operation_icon = NULL;
+        if ([operation isEqualToString:@"NO_FREEZE"]) {
+            operation_icon = [NSImage imageNamed:@"operation_no_freeze"];
+        } else if ([operation isEqualToString:@"HOME"]) {
+            if ([autoOperation isEqualToString:@"HOME"]) {
+                operation_icon = [NSImage imageNamed:@"auto_home"];
+            } else if ([autoOperation isEqualToString:@"SLEEP"]) {
+                operation_icon = [NSImage imageNamed:@"auto_sleep"];
+            } else if ([autoOperation isEqualToString:@"AWAY"]) {
+                operation_icon = [NSImage imageNamed:@"auto_away"];
+            }
+        } else if ([operation isEqualToString:@"MANUAL"]) {
+            operation_icon = [NSImage imageNamed:@"operation_manual"];
+        }
+        [self.operationStatusItem setImage:operation_icon];
+
+        Boolean heatingOn = [[json valueForKey:@"operation"] isEqualToString:@"true"];
+        NSImage* heating_icon = NULL;
+        if (heatingOn) {
+            heating_icon = [NSImage imageNamed:@"heat_on"];
+        }
+        [self.heatingStatusItem setImage:heating_icon];
     });
 }
 

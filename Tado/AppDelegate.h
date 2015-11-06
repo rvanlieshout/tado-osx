@@ -11,6 +11,8 @@
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
 @property (assign) IBOutlet NSWindow *loginWindow;
-@property (strong, nonatomic) NSStatusItem *statusItem;
+@property (strong, nonatomic) NSStatusItem *temperatureStatusItem;
+@property (strong, nonatomic) NSStatusItem *operationStatusItem;
+@property (strong, nonatomic) NSStatusItem *heatingStatusItem;
 
 @end
